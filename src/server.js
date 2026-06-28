@@ -22,7 +22,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
-  console.log(`Dashboard: ${config.baseUrl}`);
-});
+if (require.main === module) {
+  app.listen(config.port, () => {
+    console.log(`Server running on port ${config.port}`);
+    console.log(`Dashboard: ${config.baseUrl}`);
+  });
+}
+
+module.exports = app;
