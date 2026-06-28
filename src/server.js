@@ -6,6 +6,7 @@ const config = require('./config/env');
 const authRoutes = require('./routes/auth');
 const voiceRoutes = require('./routes/voice');
 const appointmentRoutes = require('./routes/appointments');
+const whatsappRoutes = require('./routes/whatsapp');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/auth', authRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

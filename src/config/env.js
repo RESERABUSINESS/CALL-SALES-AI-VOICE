@@ -7,6 +7,12 @@ module.exports = {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
+    whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER,
+  },
+  nabrah: {
+    apiKey: process.env.NABRAH_API_KEY,
+    baseUrl: process.env.NABRAH_BASE_URL || 'https://api.nabrah.ai/v1',
+    defaultVoice: process.env.NABRAH_DEFAULT_VOICE || 'saudi_male_1',
   },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,
