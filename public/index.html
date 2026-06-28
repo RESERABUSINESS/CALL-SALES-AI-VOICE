@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إيجنت المواعيد الذكي</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #1a1a1a; }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; padding: 20px 30px; text-align: center;
+    }
+    .header h1 { font-size: 24px; margin-bottom: 5px; }
+    .header p { opacity: 0.85; font-size: 14px; }
+
+    .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
+
+    .auth-banner {
+      background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px;
+      padding: 15px 20px; margin-bottom: 20px; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .auth-banner.connected { background: #d4edda; border-color: #28a745; }
+    .auth-banner a {
+      background: #667eea; color: white; padding: 8px 20px;
+      border-radius: 6px; text-decoration: none; font-size: 14px;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 18px; margin-bottom: 15px; color: #333; }
+
+    .chat-box {
+      height: 300px; overflow-y: auto; border: 1px solid #e0e0e0;
+      border-radius: 8px; padding: 12px; margin-bottom: 10px;
+      background: #fafafa;
+    }
+    .chat-msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; max-width: 85%; }
+    .chat-msg.user { background: #667eea; color: white; margin-left: auto; text-align: left; }
+    .chat-msg.bot { background: #e8e8e8; }
+
+    .chat-input {
+      display: flex; gap: 8px;
+    }
+    .chat-input input {
+      flex: 1; padding: 10px 14px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 14px;
+    }
+    .chat-input button, .btn {
+      background: #667eea; color: white; border: none;
+      padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    }
+    .chat-input button:hover, .btn:hover { background: #5a6fd6; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+    .form-group input { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+
+    .slots-list { list-style: none; max-height: 200px; overflow-y: auto; }
+    .slots-list li {
+      padding: 8px 12px; border-bottom: 1px solid #f0f0f0;
+      font-size: 14px; display: flex; justify-content: space-between;
+    }
+
+    .appointments-list { list-style: none; }
+    .appointments-list li {
+      padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px;
+    }
+    .appointments-list li strong { color: #667eea; }
+
+    .call-section { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>إيجنت المواعيد الذكي</h1>
+    <p>حجز مواعيد بالذكاء الاصطناعي + اتصال صوتي + تقويم قوقل</p>
+  </div>
+
+  <div class="container">
+    <div id="authBanner" class="auth-banner">
+      <span id="authStatus">جاري التحقق من اتصال تقويم قوقل...</span>
+      <a href="/auth/google" id="authBtn" style="display:none">ربط تقويم قوقل</a>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>محادثة الحجز</h2>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter')sendChat()">
+          <button onclick="sendChat()">إرسال</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>الأوقات المتاحة</h2>
+        <div class="form-group">
+          <label>اختر التاريخ</label>
+          <input type="date" id="dateInput" onchange="loadSlots()">
+        </div>
+        <ul class="slots-list" id="slotsList">
+          <li>اختر تاريخ لعرض الأوقات المتاحة</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>المواعيد القادمة</h2>
+        <ul class="appointments-list" id="appointmentsList">
+          <li>جاري التحميل...</li>
+        </ul>
+        <button class="btn" onclick="loadAppointments()" style="margin-top:10px">تحديث</button>
+      </div>
+
+      <div class="card">
+        <h2>اتصال صوتي</h2>
+        <p style="font-size:13px;color:#666;margin-bottom:12px">اتصل بعميل لتأكيد أو حجز موعد</p>
+        <div class="form-group">
+          <label>رقم الجوال</label>
+          <input type="tel" id="phoneInput" placeholder="+966XXXXXXXXX">
+        </div>
+        <div class="form-group">
+          <label>رسالة (اختياري)</label>
+          <input type="text" id="callMessage" placeholder="رسالة مخصصة للعميل">
+        </div>
+        <button class="btn" onclick="makeCall()">اتصل الآن</button>
+        <p id="callStatus" style="margin-top:8px;font-size:13px;color:#666"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let sessionId = null;
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/auth/status');
+        const data = await res.json();
+        const banner = document.getElementById('authBanner');
+        const status = document.getElementById('authStatus');
+        const btn = document.getElementById('authBtn');
+        if (data.authenticated) {
+          banner.classList.add('connected');
+          status.textContent = 'تقويم قوقل متصل';
+          btn.style.display = 'none';
+          loadAppointments();
+        } else {
+          status.textContent = 'تقويم قوقل غير متصل';
+          btn.style.display = 'inline-block';
+        }
+      } catch {
+        document.getElementById('authStatus').textContent = 'تعذر التحقق من الاتصال';
+      }
+    }
+
+    function addChatMsg(text, type) {
+      const box = document.getElementById('chatBox');
+      const div = document.createElement('div');
+      div.className = 'chat-msg ' + type;
+      div.textContent = text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      addChatMsg(msg, 'user');
+
+      try {
+        const res = await fetch('/api/appointments/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, sessionId }),
+        });
+        const data = await res.json();
+        sessionId = data.sessionId;
+        addChatMsg(data.message, 'bot');
+        if (data.booking) {
+          addChatMsg('تم حجز الموعد بنجاح! رقم الحجز: ' + data.booking.eventId, 'bot');
+          loadAppointments();
+        }
+      } catch {
+        addChatMsg('عذراً، حصل خطأ. حاول مرة ثانية.', 'bot');
+      }
+    }
+
+    async function loadSlots() {
+      const date = document.getElementById('dateInput').value;
+      if (!date) return;
+      const list = document.getElementById('slotsList');
+      list.innerHTML = '<li>جاري التحميل...</li>';
+
+      try {
+        const res = await fetch('/api/appointments/slots?date=' + date);
+        const data = await res.json();
+        if (data.slots && data.slots.length > 0) {
+          list.innerHTML = data.slots.map(s => {
+            const start = new Date(s.start).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            const end = new Date(s.end).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            return '<li><span>' + start + ' - ' + end + '</span></li>';
+          }).join('');
+        } else {
+          list.innerHTML = '<li>لا توجد أوقات متاحة</li>';
+        }
+      } catch {
+        list.innerHTML = '<li>تعذر تحميل الأوقات</li>';
+      }
+    }
+
+    async function loadAppointments() {
+      const list = document.getElementById('appointmentsList');
+      try {
+        const res = await fetch('/api/appointments/upcoming?limit=5');
+        const data = await res.json();
+        if (data.appointments && data.appointments.length > 0) {
+          list.innerHTML = data.appointments.map(a => {
+            const date = new Date(a.start.dateTime || a.start.date);
+            return '<li><strong>' + (a.summary || 'بدون عنوان') + '</strong><br>' +
+              date.toLocaleDateString('ar-SA') + ' - ' +
+              date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) + '</li>';
+          }).join('');
+        } else {
+          list.innerHTML = '<li>لا توجد مواعيد قادمة</li>';
+        }
+      } catch {
+        list.innerHTML = '<li>تعذر تحميل المواعيد</li>';
+      }
+    }
+
+    async function makeCall() {
+      const phone = document.getElementById('phoneInput').value.trim();
+      const message = document.getElementById('callMessage').value.trim();
+      const status = document.getElementById('callStatus');
+
+      if (!phone) { status.textContent = 'أدخل رقم الجوال'; return; }
+
+      status.textContent = 'جاري الاتصال...';
+      try {
+        const res = await fetch('/api/voice/outbound', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: phone, message }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          status.textContent = 'تم بدء الاتصال بنجاح';
+        } else {
+          status.textContent = 'فشل الاتصال: ' + (data.error || 'خطأ غير معروف');
+        }
+      } catch {
+        status.textContent = 'تعذر الاتصال';
+      }
+    }
+
+    checkAuth();
+    document.getElementById('dateInput').valueAsDate = new Date();
+  </script>
+</body>
+</html>
